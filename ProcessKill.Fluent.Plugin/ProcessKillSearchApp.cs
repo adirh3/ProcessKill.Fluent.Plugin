@@ -72,7 +72,6 @@ namespace ProcessKill.Fluent.Plugin
             foreach (Process process in Process.GetProcesses())
             {
                 string processName = process.ProcessName;
-
                 if (killOperationType == KillOperationType.All && processNames.Contains(processName))
                     continue;
 
@@ -91,6 +90,7 @@ namespace ProcessKill.Fluent.Plugin
         {
             if (searchResult is not ProcessKillSearchResult processKillSearchResult)
                 throw new InvalidCastException(nameof(processKillSearchResult));
+            
             if (processKillSearchResult.SelectedOperation is not ProcessKillSearchOperation processKillSearchOperation)
                 throw new InvalidCastException(nameof(processKillSearchOperation));
 
@@ -105,10 +105,8 @@ namespace ProcessKill.Fluent.Plugin
                 // Process already closed
                 return new ValueTask<IHandleResult>(new HandleResult(true, true));
             }
-
-
+            
             string processName = processKillSearchResult.ProcessName + ".exe";
-
             string args = processKillSearchResult.KillOperationType switch
             {
                 KillOperationType.All => $"/im \"{processName}\"",

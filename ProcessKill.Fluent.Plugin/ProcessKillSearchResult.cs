@@ -16,11 +16,11 @@ namespace ProcessKill.Fluent.Plugin
 
     public sealed class ProcessKillSearchResult : SearchResultBase
     {
-        internal string ProcessName { get; }
-        internal KillOperationType KillOperationType { get; }
-
         internal const string KillTag = "Kill";
         internal const string KillAllTag = "KillAll";
+        
+        internal string ProcessName { get; }
+        internal KillOperationType KillOperationType { get; }
 
         private static readonly SearchTag[] SearchTags = { new() { Name = KillTag } };
 
