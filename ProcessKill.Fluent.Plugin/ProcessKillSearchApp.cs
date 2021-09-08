@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using Blast.API.Core.Processes;
-using Blast.API.Processes;
 using Blast.API.Search;
 using Blast.Core;
 using Blast.Core.Interfaces;
@@ -16,7 +14,6 @@ namespace ProcessKill.Fluent.Plugin
     public class ProcessKillSearchApp : ISearchApplication
     {
         private readonly SearchApplicationInfo _applicationInfo;
-        private readonly IProcessManager _processManager;
 
         public ProcessKillSearchApp()
         {
@@ -44,7 +41,6 @@ namespace ProcessKill.Fluent.Plugin
                     }
                 }
             };
-            _processManager = ProcessUtils.GetManagerInstance();
         }
 
         public SearchApplicationInfo GetApplicationInfo()
@@ -98,11 +94,25 @@ namespace ProcessKill.Fluent.Plugin
             if (processKillSearchResult.SelectedOperation is not ProcessKillSearchOperation processKillSearchOperation)
                 throw new InvalidCastException(nameof(processKillSearchOperation));
 
+            int processId = processKillSearchResult.ProcessId;
+            Process processById;
+            try
+            {
+                processById = Process.GetProcessById(processId);
+            }
+            catch (Exception)
+            {
+                // Process already closed
+                return new ValueTask<IHandleResult>(new HandleResult(true, true));
+            }
+
+
             string processName = processKillSearchResult.ProcessName + ".exe";
+
             string args = processKillSearchResult.KillOperationType switch
             {
                 KillOperationType.All => $"/im \"{processName}\"",
-                KillOperationType.Single => $"/pid {processKillSearchResult.ProcessId}",
+                KillOperationType.Single => $"/pid {processId}",
                 _ => throw new ArgumentOutOfRangeException()
             };
             Process.Start(new ProcessStartInfo
@@ -110,11 +120,23 @@ namespace ProcessKill.Fluent.Plugin
                 FileName = "taskkill",
                 Arguments = "/f " + args,
                 Verb = processKillSearchOperation.RunAsAdmin ? "runas" : string.Empty,
-                CreateNoWindow = true
+                CreateNoWindow = !processKillSearchOperation.RunAsAdmin,
+                UseShellExecute = processKillSearchOperation.RunAsAdmin
             })?.Dispose();
 
-            processKillSearchResult.RemoveResult = true;
+            bool removeResult = false;
+            try
+            {
+                removeResult = processById.WaitForExit(5000);
+            }
+            catch (Exception)
+            {
+                // process did not close
+            }
+            
+            processById.Dispose();
 
+            processKillSearchResult.RemoveResult = removeResult;
             return new ValueTask<IHandleResult>(new HandleResult(true, false));
         }
     }

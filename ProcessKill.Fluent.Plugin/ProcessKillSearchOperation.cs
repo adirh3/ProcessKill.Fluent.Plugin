@@ -12,6 +12,7 @@ namespace ProcessKill.Fluent.Plugin
         public ProcessKillSearchOperation(bool runAsAdmin) : base("Kill" + (runAsAdmin ? " as admin" : string.Empty),
             "Kill the process" + (runAsAdmin ? " as admin" : string.Empty), KillIconGlyph)
         {
+            HideMainWindow = false;
             RunAsAdmin = runAsAdmin;
             KeyGesture = runAsAdmin switch
             {

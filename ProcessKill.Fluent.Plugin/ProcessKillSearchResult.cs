@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using Blast.API.FileSystem;
 using Blast.Core.Interfaces;
@@ -15,7 +14,7 @@ namespace ProcessKill.Fluent.Plugin
         All
     }
 
-    public class ProcessKillSearchResult : SearchResultBase
+    public sealed class ProcessKillSearchResult : SearchResultBase
     {
         internal string ProcessName { get; }
         internal KillOperationType KillOperationType { get; }
@@ -23,10 +22,10 @@ namespace ProcessKill.Fluent.Plugin
         internal const string KillTag = "Kill";
         internal const string KillAllTag = "KillAll";
 
-        private static readonly SearchTag[] SearchTags = {new() {Name = KillTag}};
+        private static readonly SearchTag[] SearchTags = { new() { Name = KillTag } };
 
         internal static readonly ObservableCollection<ISearchOperation> KillSupportedOperations =
-            new() {new ProcessKillSearchOperation(false), new ProcessKillSearchOperation(true)};
+            new() { new ProcessKillSearchOperation(false), new ProcessKillSearchOperation(true) };
 
 
         public ProcessKillSearchResult(string processName, string searchedText, double score, Process process,
@@ -34,14 +33,18 @@ namespace ProcessKill.Fluent.Plugin
             processName,
             searchedText, "Kill", score,
             KillSupportedOperations,
-            new ObservableCollection<SearchTag>(SearchTags.ToList().Append(new SearchTag {Name = processName})))
+            new ObservableCollection<SearchTag>(SearchTags.ToList().Append(new SearchTag { Name = processName })))
         {
             ProcessName = processName;
             KillOperationType = killOperationType;
+            ShouldCacheResult = false;
 
             try
             {
-                ProcessId = AdditionalInformation = process.Id.ToString();
+                ProcessId = process.Id;
+                AdditionalInformation = ProcessId.ToString();
+                // This is to make sure FS won't filter duplicate results based on name
+                SearchObjectId = ProcessId;
                 string windowTitle = process.MainWindowTitle;
                 if (!string.IsNullOrWhiteSpace(windowTitle))
                 {
@@ -50,7 +53,7 @@ namespace ProcessKill.Fluent.Plugin
                 }
 
                 string processFile = process.MainModule?.FileName;
-                if (string.IsNullOrWhiteSpace(processFile) || !File.Exists(processFile))
+                if (string.IsNullOrWhiteSpace(processFile))
                     return;
                 PreviewImage = FileUtils.FileUtilsInstance.GetFileIconHighRes(processFile);
             }
@@ -60,7 +63,7 @@ namespace ProcessKill.Fluent.Plugin
             }
         }
 
-        public string ProcessId { get; set; }
+        public int ProcessId { get; }
 
         protected override void OnSelectedSearchResultChanged()
         {
