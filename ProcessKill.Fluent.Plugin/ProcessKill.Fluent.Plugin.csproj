@@ -1,7 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net5.0</TargetFramework>
+        <TargetFramework>net5.0-windows10.0.19041</TargetFramework>
+        <AssemblyVersion>1.1.0.0</AssemblyVersion>
     </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Blast.API" Version="0.9.89.1-beta" />
+    </ItemGroup>
 
 </Project>
